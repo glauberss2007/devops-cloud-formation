@@ -1,0 +1,39 @@
+Parameters:
+  ApplicationName:
+    Description: The application name  # Description for the application name parameter
+    Type: String  # Specifies that this parameter is a string
+
+  VPCId:
+    Description: VPC to create the security group into  # Description for the VPC parameter
+    Type: AWS::EC2::VPC::Id  # Specifies that this parameter should be a VPC ID
+
+Resources:
+  SSHSecurityGroup:
+    Type: AWS::EC2::SecurityGroup  # Resource type for creating an EC2 security group
+    Properties:
+      GroupDescription: !Sub Security group for ${ApplicationName}  # Description of the security group, dynamically includes the application name using !Sub
+      SecurityGroupIngress:  # Inbound rules for the security group
+        - CidrIp: "10.0.0.0/25"  # CIDR block allowing SSH access for the Engineering department
+          FromPort: 22  # Start of the port range (22 for SSH)
+          ToPort: 22  # End of the port range (22 for SSH)
+          IpProtocol: tcp  # Protocol type (TCP for SSH)
+          Description: SSH for Engineering department  # Description of this specific rule
+          
+        - CidrIp: "192.168.0.0/25"  # CIDR block allowing SSH access for the HR department
+          FromPort: 22  # Start of the port range
+          ToPort: 22  # End of the port range
+          IpProtocol: tcp  # Protocol type
+          Description: SSH for HR department  # Description for this rule
+          
+        - CidrIp: "172.16.0.0/31"  # CIDR block allowing SSH access for Business Partners
+          FromPort: 22  # Start of the port range
+          ToPort: 22  # End of the port range
+          IpProtocol: tcp  # Protocol type
+          Description: Business Partners  # Description for this rule
+          
+      VpcId: !Ref VPCId  # References the VPC ID parameter to associate the security group with the specified VPC
+
+Outputs:
+  SSHGroupId:
+    Value: !Ref SSHSecurityGroup  # Outputs the ID of the created SSH Security Group
+    Description: Id for the SSH Security Group  # Description of this output

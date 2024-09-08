@@ -1,0 +1,228 @@
+AWSTemplateFormatVersion: 2010-09-09  # Specifies the CloudFormation template version
+Description: Enable AWS Config  # Description of the template's purpose
+
+Metadata:
+  AWS::CloudFormation::Interface:  # Metadata to define user interface options in the CloudFormation console
+    ParameterGroups:
+      - Label:
+          default: Recorder Configuration  # Label for the recorder configuration group
+        Parameters:
+          - AllSupported  # Parameter for recording all supported resource types
+          - IncludeGlobalResourceTypes  # Parameter to include global resource types
+          - ResourceTypes  # Parameter for specific resource types to record
+      - Label:
+          default: Delivery Channel Configuration  # Label for the delivery channel configuration group
+        Parameters:
+          - DeliveryChannelName  # Parameter for naming the delivery channel
+          - Frequency  # Parameter for snapshot delivery frequency
+      - Label:
+          default: Delivery Notifications  # Label for the delivery notifications group
+        Parameters:
+          - TopicArn  # Parameter for SNS topic ARN
+          - NotificationEmail  # Parameter for the notification email address
+
+    ParameterLabels:  # Custom labels for parameters
+      AllSupported:
+        default: Support all resource types  # Label for the AllSupported parameter
+      IncludeGlobalResourceTypes:
+        default: Include global resource types  # Label for the IncludeGlobalResourceTypes parameter
+      ResourceTypes:
+        default: List of resource types if not all supported  # Label for the ResourceTypes parameter
+      DeliveryChannelName:
+        default: Configuration delivery channel name  # Label for the DeliveryChannelName parameter
+      Frequency:
+        default: Snapshot delivery frequency  # Label for the Frequency parameter
+      TopicArn:
+        default: SNS topic name  # Label for the TopicArn parameter
+      NotificationEmail:
+        default: Notification Email (optional)  # Label for the NotificationEmail parameter
+
+Parameters:
+  AllSupported:
+    Type: String  # Parameter type as String
+    Default: True  # Default value for recording all supported resource types
+    Description: Indicates whether to record all supported resource types.  # Description for AllSupported
+    AllowedValues:  # Allowed values for this parameter
+      - True  # Option to record all resources
+      - False  # Option to not record all resource types
+
+  IncludeGlobalResourceTypes:
+    Type: String  # Parameter type as String
+    Default: True  # Default value to include global resource types
+    Description: Indicates whether AWS Config records all supported global resource types.  # Description for IncludeGlobalResourceTypes
+    AllowedValues:  # Allowed values for this parameter
+      - True  # Option to include global resource types
+      - False  # Option to exclude global resource types
+
+  ResourceTypes:
+    Type: List<String>  # Parameter type as List of Strings
+    Description: A list of valid AWS resource types to include in this recording group, such as AWS::EC2::Instance or AWS::CloudTrail::Trail.  # Description for ResourceTypes
+    Default: <All>  # Default value for specific resource types
+
+  DeliveryChannelName:
+    Type: String  # Parameter type as String
+    Default: <Generated>  # Default value indicating the channel name will be auto-generated
+    Description: The name of the delivery channel.  # Description for DeliveryChannelName
+
+  Frequency:
+    Type: String  # Parameter type as String
+    Default: 24hours  # Default value for snapshot delivery frequency
+    Description: The frequency with which AWS Config delivers configuration snapshots.  # Description for Frequency
+    AllowedValues:  # Allowed frequency options
+      - 1hour  # Option for 1-hour frequency
+      - 3hours  # Option for 3-hour frequency
+      - 6hours  # Option for 6-hour frequency
+      - 12hours  # Option for 12-hour frequency
+      - 24hours  # Option for 24-hour frequency
+
+  TopicArn:
+    Type: String  # Parameter type as String
+    Default: <New Topic>  # Default value indicating a new topic will be created
+    Description: The Amazon Resource Name (ARN) of the Amazon Simple Notification Service (Amazon SNS) topic that AWS Config delivers notifications to.  # Description for TopicArn
+
+  NotificationEmail:
+    Type: String  # Parameter type as String
+    Default: <None>  # Default value for notification email (no email set by default)
+    Description: Email address for AWS Config notifications (for new topics).  # Description for NotificationEmail
+
+Conditions:
+  IsAllSupported: !Equals  # Condition to check if AllSupported is True
+    - !Ref AllSupported
+    - True  # Condition evaluates to true if AllSupported is set to True
+
+  IsGeneratedDeliveryChannelName: !Equals  # Condition to check if DeliveryChannelName is using the default value <Generated>
+    - !Ref DeliveryChannelName
+    - <Generated>
+
+  CreateTopic: !Equals  # Condition to check if a new SNS topic should be created
+    - !Ref TopicArn
+    - <New Topic>
+
+  CreateSubscription: !And  # Condition to check if an SNS subscription should be created
+    - !Condition CreateTopic  # Must create a new topic
+    - !Not  # Ensure that NotificationEmail is not <None>
+      - !Equals
+        - !Ref NotificationEmail
+        - <None>
+
+Mappings:
+  Settings:  # Mapping for settings related to delivery frequency
+    FrequencyMap:  # Map of frequency options to their corresponding labels
+      1hour   : One_Hour  # Map 1hour to One_Hour
+      3hours  : Three_Hours  # Map 3hours to Three_Hours
+      6hours  : Six_Hours  # Map 6hours to Six_Hours
+      12hours : Twelve_Hours  # Map 12hours to Twelve_Hours
+      24hours : TwentyFour_Hours  # Map 24hours to TwentyFour_Hours
+
+Resources:
+
+  ConfigBucket:
+    DeletionPolicy: Retain  # Retain the bucket even if the stack is deleted
+    Type: AWS::S3::Bucket  # Resource type for creating an S3 bucket
+
+  ConfigBucketPolicy:
+    Type: AWS::S3::BucketPolicy  # Resource type for creating a bucket policy on the S3 bucket
+    Properties:
+      Bucket: !Ref ConfigBucket  # References the S3 bucket created earlier
+      PolicyDocument:  # Policy document that defines permissions
+        Version: 2012-10-17  # Version of the policy document
+        Statement:  # Policy statements
+          - Sid: AWSConfigBucketPermissionsCheck  # Statement ID
+            Effect: Allow  # Effect of the policy (Allow)
+            Principal:  # Principle defining whose access is controlled
+              Service:
+                - config.amazonaws.com  # Service that is allowed access
+            Action: s3:GetBucketAcl  # Action that is allowed
+            Resource:
+              - !Sub "arn:${AWS::Partition}:s3:::${ConfigBucket}"  # Resource ARN for the bucket access
+
+          - Sid: AWSConfigBucketDelivery  # Statement ID
+            Effect: Allow  # Effect of the policy (Allow)
+            Principal:  # Principle defining whose access is controlled
+              Service:
+                - config.amazonaws.com  # Service that is allowed access
+            Action: s3:PutObject  # Action that is allowed (put objects into the bucket)
+            Resource:
+              - !Sub "arn:${AWS::Partition}:s3:::${ConfigBucket}/AWSLogs/${AWS::AccountId}/*"  # Resource ARN for the objects in the bucket
+
+  ConfigTopic:
+    Condition: CreateTopic  # Only create this resource if the CreateTopic condition is true
+    Type: AWS::SNS::Topic  # Resource type for creating an SNS topic
+    Properties:
+      TopicName: !Sub "config-topic-${AWS::AccountId}"  # Name of the SNS topic, substituting the account ID
+      DisplayName: AWS Config Notification Topic  # Display name for the topic
+
+  ConfigTopicPolicy:
+    Condition: CreateTopic  # Only create this resource if the CreateTopic condition is true
+    Type: AWS::SNS::TopicPolicy  # Resource type for creating a policy on an SNS topic
+    Properties:
+      Topics:
+        - !Ref ConfigTopic  # References the SNS topic created earlier
+      PolicyDocument:  # Policy document that defines permissions for the topic
+        Statement:
+          - Sid: AWSConfigSNSPolicy  # Statement ID
+            Action:
+              - sns:Publish  # Action that is allowed (to publish to the topic)
+            Effect: Allow  # Effect of the policy (Allow)
+            Resource: !Ref ConfigTopic  # Resource to which the policy applies
+            Principal:  # Principle defining whose access is controlled
+              Service:
+                - config.amazonaws.com  # Service that is allowed to publish to the SNS topic
+
+  EmailNotification:
+    Condition: CreateSubscription  # Only create this resource if the CreateSubscription condition is true
+    Type: AWS::SNS::Subscription  # Resource type for creating an SNS subscription
+    Properties:
+      Endpoint: !Ref NotificationEmail  # Email address for the subscription
+      Protocol: email  # Protocol for the subscription (email)
+      TopicArn: !Ref ConfigTopic  # ARN of the SNS topic to which this subscription is attached
+
+  ConfigRecorderRole:
+    Type: AWS::IAM::Role  # Resource type for creating an IAM role
+    Properties:
+      AssumeRolePolicyDocument:  # Policy document to allow AWS Config to assume this role
+        Version: 2012-10-17  # Version of the role policy
+        Statement:
+          - Effect: Allow  # Effect of the statement (Allow)
+            Principal:  # Principle defining whose access is controlled
+              Service:
+                - config.amazonaws.com  # AWS Config service
+            Action:
+              - sts:AssumeRole  # Action that is allowed (to assume this role)
+      Path: /  # Path for the role
+      ManagedPolicyArns:  # Managed policies attached to the role
+        - !Sub "arn:${AWS::Partition}:iam::aws:policy/service-role/AWS_ConfigRole"  # AWS-managed policy for AWS Config
+
+  ConfigRecorder:
+    Type: AWS::Config::ConfigurationRecorder  # Resource type for creating a configuration recorder
+    DependsOn:
+      - ConfigBucketPolicy  # This resource depends on the S3 bucket policy being created first
+    Properties:
+      RoleARN: !GetAtt ConfigRecorderRole.Arn  # ARN of the IAM role to be used by the recorder
+      RecordingGroup:
+        AllSupported: !Ref AllSupported  # Indicates whether to record all supported resource types
+        IncludeGlobalResourceTypes: !Ref IncludeGlobalResourceTypes  # Indicates whether to include global resource types
+        ResourceTypes: !If  # Conditional logic to set resource types based on the AllSupported condition
+          - IsAllSupported  # If all supported is true
+          - !Ref AWS::NoValue  # Do not specify resource types
+          - !Ref ResourceTypes  # Use the specified resource types if not all supported
+
+  ConfigDeliveryChannel:
+    Type: AWS::Config::DeliveryChannel  # Resource type for creating a delivery channel
+    DependsOn:
+      - ConfigBucketPolicy  # This resource depends on the S3 bucket policy being created first
+    Properties:
+      Name: !If  # Conditional logic to set the name based on whether it's a generated name
+        - IsGeneratedDeliveryChannelName
+        - !Ref AWS::NoValue  # Do not specify a name if it is generated
+        - !Ref DeliveryChannelName  # Use the specified delivery channel name
+      ConfigSnapshotDeliveryProperties:
+        DeliveryFrequency: !FindInMap  # Find the map value for delivery frequency based on user input
+          - Settings
+          - FrequencyMap
+          - !Ref Frequency  # Use the frequency specified by the user
+      S3BucketName: !Ref ConfigBucket  # References the S3 bucket for delivery
+      SnsTopicARN: !If  # Conditional logic to set the SNS topic ARN if a new topic was created
+        - CreateTopic
+        - !Ref ConfigTopic  # References the new SNS topic
+        - !Ref TopicArn  # Use the existing SNS topic ARN if no topic was created

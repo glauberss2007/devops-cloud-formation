@@ -1,0 +1,27 @@
+AWSTemplateFormatVersion: 2010-09-09  # Specifies the CloudFormation template version
+Description: Configure the AWSCloudFormationStackSetExecutionRole to enable use of your account as a target account in AWS CloudFormation StackSets.  # Description of the template's purpose
+
+Parameters:
+  AdministratorAccountId:
+    Type: String  # Parameter type as String
+    Description: AWS Account Id of the administrator account (the account in which StackSets will be created).  # Description for the AdministratorAccountId parameter
+    MaxLength: 12  # Maximum length for the AWS account ID
+    MinLength: 12  # Minimum length for the AWS account ID
+
+Resources:
+  ExecutionRole:
+    Type: AWS::IAM::Role  # Resource type for creating an IAM role
+    Properties:
+      RoleName: AWSCloudFormationStackSetExecutionRole  # Name of the IAM role being created
+      AssumeRolePolicyDocument:  # Policy document for the role that defines who can assume it
+        Version: 2012-10-17  # Version of the assume role policy document
+        Statement:  # Policy statements for the assume role document
+          - Effect: Allow  # Allows the following action
+            Principal:  # Defines who can assume this role
+              AWS:
+                - !Ref AdministratorAccountId  # References the AdministratorAccountId parameter, allowing that account to assume the role
+            Action:  # Action that is allowed
+              - sts:AssumeRole  # Allows the specified principal to assume this role
+      Path: /  # The path for the IAM role, typically root
+      ManagedPolicyArns:  # Specifies the managed policies to attach to this role
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/AdministratorAccess  # ARN of the AWS managed policy that grants full access to resources, substituting the partition (e.g., aws, aws-cn, or aws-us-gov)

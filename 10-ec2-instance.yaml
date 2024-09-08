@@ -1,0 +1,31 @@
+Parameters:
+  VPCId:
+    Description: VPC to create the security group and EC2 instance into  # Description of the VPC parameter
+    Type: AWS::EC2::VPC::Id  # Specifies that this parameter must be a VPC ID
+
+  TemplateURL:
+    Description: URL of the nested stack template  # Description of the URL parameter for the nested stack
+    Type: String  # Specifies that this parameter is a string
+
+  ImageId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>  # Retrieves the ID of an EC2 image from the SSM Parameter Store
+    Default: /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2  # Default value for the ImageId parameter, retrieves the latest Amazon Linux AMI
+
+Resources:
+  SSHSecurityGroupStack:
+    Type: AWS::CloudFormation::Stack  # Resource type for a nested CloudFormation stack
+    Properties:
+      TemplateURL: !Ref TemplateURL  # Reference to the nested stack template URL provided as a parameter
+      Parameters:
+        ApplicationName: !Ref AWS::StackName  # Passes the name of the current stack to the nested stack as a parameter
+        VPCId: !Ref VPCId  # Passes the specified VPC ID to the nested stack for resource creation
+      TimeoutInMinutes: 5  # Sets a timeout for the nested stack creation (5 minutes)
+
+  EC2Instance:
+    Type: AWS::EC2::Instance  # Resource type for creating an EC2 instance
+    Properties:
+      InstanceType: t2.micro  # Specifies the type of EC2 instance (t2.micro is eligible for the free tier)
+      # Note we use the pseudo parameter AWS::Region 
+      ImageId: !Ref ImageId  # Retrieves the specified AMI ID for the EC2 instance from the ImageId parameter
+      SecurityGroupIds:
+        - !GetAtt SSHSecurityGroupStack.Outputs.SSHGroupId  # Gets the security group ID output from the nested stack and associates it with the EC2 instance

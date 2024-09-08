@@ -1,0 +1,27 @@
+Parameters:
+  VPCId:
+    Description: VPC to create the security group into  # Description of the parameter
+    Type: AWS::EC2::VPC::Id  # Type of the parameter, specifying it should be an ID of a VPC
+
+Resources:
+  SSHSecurityGroup:
+    Type: "AWS::EC2::SecurityGroup"  # Resource type for a security group
+    Properties:
+      GroupDescription: Test Drift SSH Security Group  # Description for the security group
+      SecurityGroupIngress:  # Inbound rules for the security group
+        - CidrIp: "10.0.0.0/25"  # CIDR block that allows access from this IP range
+          FromPort: 22  # Start of the port range (22 for SSH)
+          ToPort: 22  # End of the port range (22 for SSH)
+          IpProtocol: tcp  # Protocol type (TCP for SSH)
+      VpcId: !Ref VPCId  # Reference to the VPC ID provided as a parameter
+
+  HTTPSecurityGroup:
+    Type: "AWS::EC2::SecurityGroup"  # Resource type for another security group
+    Properties:
+      GroupDescription: Test Drift HTTP Security Group  # Description for this security group
+      SecurityGroupIngress:  # Inbound rules for the HTTP security group
+        - CidrIp: "0.0.0.0/0"  # CIDR block that allows access from anywhere on the internet
+          FromPort: 80  # Start of the port range (80 for HTTP)
+          ToPort: 80  # End of the port range (80 for HTTP)
+          IpProtocol: tcp  # Protocol type (TCP for HTTP)
+      VpcId: !Ref VPCId  # Reference to the same VPC ID provided as a parameter

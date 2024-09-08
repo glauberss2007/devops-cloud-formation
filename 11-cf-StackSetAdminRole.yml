@@ -1,0 +1,27 @@
+AWSTemplateFormatVersion: 2010-09-09  # Specifies the CloudFormation template version
+Description: Configure the AWSCloudFormationStackSetAdministrationRole to enable use of AWS CloudFormation StackSets.  # Description of the template's purpose
+
+Resources:
+  AdministrationRole:
+    Type: AWS::IAM::Role  # Resource type for creating an IAM role
+    Properties:
+      RoleName: AWSCloudFormationStackSetAdministrationRole  # Name of the IAM role being created
+      AssumeRolePolicyDocument:  # Document that defines who can assume this role
+        Version: 2012-10-17  # Version of the assume role policy document
+        Statement:  # Policy statements for the assume role document
+          - Effect: Allow  # Allows the following action
+            Principal:  # Defines who can assume this role
+              Service: cloudformation.amazonaws.com  # AWS CloudFormation service is allowed to assume this role
+            Action:  # Action that is allowed
+              - sts:AssumeRole  # Allows the specified principal (CloudFormation service) to assume this role
+      Path: /  # The path for the IAM role, typically root
+      Policies:  # Custom policies that will be attached to this role
+        - PolicyName: AssumeRole-AWSCloudFormationStackSetExecutionRole  # Name of the custom policy
+          PolicyDocument:  # Document defining the permissions for the policy
+            Version: 2012-10-17  # Version of the policy document
+            Statement:  # Policy statements for this document
+              - Effect: Allow  # Allows the following action
+                Action:  # Actions that are allowed
+                  - sts:AssumeRole  # Action that allows assuming another role
+                Resource:  # Specifies the resources that this policy applies to
+                  - "arn:*:iam::*:role/AWSCloudFormationStackSetExecutionRole"  # Allows the assumption of any role named AWSCloudFormationStackSetExecutionRole across all accounts
