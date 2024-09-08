@@ -1,0 +1,19 @@
+Parameters:
+  # Parameter to specify the EC2 instance type using SSM Parameter Store
+  InstanceType:
+    Description: WebServer EC2 instance type
+    Type: AWS::SSM::Parameter::Value<String>  # Retrieves a string value from SSM Parameter Store
+    Default: /dev/ec2/instanceType  # Default path to the SSM parameter for instance type
+
+  # Parameter to specify the AMI ID using SSM Parameter Store
+  ImageId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>  # Retrieves an AMI ID from SSM Parameter Store
+    Default: /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2  # Default path for the latest Amazon Linux 2 AMI
+
+Resources:
+  # Definition of an EC2 instance
+  MyEC2Instance:
+    Type: AWS::EC2::Instance  # Specifies the resource type as an EC2 Instance
+    Properties:
+      InstanceType: !Ref InstanceType  # Uses the InstanceType parameter to determine the instance type
+      ImageId: !Ref ImageId  # Uses the ImageId parameter to set the AMI ID

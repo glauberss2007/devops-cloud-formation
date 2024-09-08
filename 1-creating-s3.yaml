@@ -1,0 +1,37 @@
+Parameters:
+  # Parameter for specifying the name of the S3 bucket
+  BucketName:
+    Type: String  # Specifies that this parameter will hold a string value
+
+Resources:
+  # Defines an S3 bucket with default properties (no additional configuration)
+  MyS3Bucket1:
+    Type: AWS::S3::Bucket  # Specifies the resource type as an S3 Bucket
+    Properties: {}  # No additional properties specified; uses default settings
+
+  # Defines an S3 bucket with public read access
+  MyS3Bucket2:
+    Type: AWS::S3::Bucket  # Specifies the resource type as an S3 Bucket
+    Properties:
+      AccessControl: PublicRead  # Sets the bucket's access control to allow public read access
+
+  # Defines another S3 bucket with public read access and a custom bucket name
+  MyS3Bucket3:
+    Type: AWS::S3::Bucket  # Specifies the resource type as an S3 Bucket
+    Properties:
+      AccessControl: PublicRead  # Sets the bucket's access control to allow public read access
+      BucketName: "insert-some-random-string-here-12345233"  # Specifies a custom name for the bucket
+  
+  # Defines an S3 bucket without any configurations and with a retention policy
+  MyS3Bucket4:
+    Type: AWS::S3::Bucket  # Specifies the resource type as an S3 Bucket
+    Properties: {}  # No additional properties specified; uses default settings
+    DeletionPolicy: Retain  # Retains the bucket even if the stack is deleted
+
+  # Defines an S3 bucket using a parameter for the bucket name and retains it on deletion
+  MyS3Bucket5:
+    Type: AWS::S3::Bucket  # Specifies the resource type as an S3 Bucket
+    Properties:
+      BucketName: !Ref BucketName  # Sets the bucket name using the provided parameter
+    DeletionPolicy: Retain  # Retains the bucket even if the stack is deleted
+    UpdateReplacePolicy: Retain  # Retains the bucket on updates that require replacement

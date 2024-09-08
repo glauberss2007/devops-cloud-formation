@@ -1,0 +1,105 @@
+Parameters:
+  # A simple string parameter to describe the security group
+  SecurityGroupDescription:
+    Description: Security Group Description (Simple parameter)
+    Type: String
+
+  # A numeric parameter specifying a port for Security Group with value constraints
+  SecurityGroupPort:
+    Description: Simple Description of a Number Parameter, with MinValue and MaxValue
+    Type: Number
+    MinValue: 1150  # Minimum port value allowed
+    MaxValue: 65535  # Maximum port value allowed
+
+  # A string parameter for EC2 instance type with default and allowed options
+  InstanceType:
+    Description: WebServer EC2 instance type (has default, AllowedValues)
+    Type: String
+    Default: t2.small  # Default instance type
+    AllowedValues:  # Specifies valid EC2 instance types
+      - t1.micro
+      - t2.nano
+      - t2.micro
+      - t2.small
+    ConstraintDescription: must be a valid EC2 instance type.
+
+  # Parameter for a database admin password, with NoEcho to hide input
+  DBPwd:
+    NoEcho: true  # Keeps the password confidential
+    Description: The database admin account password (won't be echoed)
+    Type: String
+
+  # Specifies an existing EC2 KeyPair for SSH access
+  KeyName:
+    Description: Name of an existing EC2 KeyPair to enable SSH access to the instances. Linked to AWS Parameter
+    Type: AWS::EC2::KeyPair::KeyName
+    ConstraintDescription: must be the name of an existing EC2 KeyPair.
+
+  # String parameter for a CIDR IP address range to control access
+  SecurityGroupIngressCIDR:
+    Description: The IP address range that can be used to communicate to the EC2 instances
+    Type: String
+    MinLength: '9'  # Minimum length of the IP range string
+    MaxLength: '18'  # Maximum length of the IP range string
+    Default: 0.0.0.0/0  # Default allows access from any IP
+    AllowedPattern: (\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})  # Ensures valid CIDR format
+    ConstraintDescription: must be a valid IP CIDR range of the form x.x.x.x/x.
+
+  # Parameter to specify the VPC ID where resources will be deployed
+  MyVPC:
+    Description: VPC to operate in
+    Type: AWS::EC2::VPC::Id
+
+  # Parameter specifying a list of Subnet IDs
+  MySubnetIDs:
+    Description: Subnet IDs that is a List of Subnet Id
+    Type: "List<AWS::EC2::Subnet::Id>"
+
+  # Parameter for a list of CIDR blocks for subnets
+  DbSubnetIpBlocks:
+    Description: "Comma-delimited list of three CIDR blocks"
+    Type: CommaDelimitedList
+    Default: "10.0.48.0/24, 10.0.112.0/24, 10.0.176.0/24"  # Default list of subnet CIDR blocks
+
+Resources:
+  # Defines an EC2 instance with specified parameters
+  MyEC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref InstanceType  # References the InstanceType parameter
+      KeyName: !Ref KeyName  # References the KeyName parameter for SSH access
+      ImageId: ami-0742b4e673072066f  # Specifies the AMI ID for the instance
+      SubnetId: !Ref DbSubnet1  # References an internal CloudFormation resource
+
+  # Defines a security group with ingress rules
+  MySecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: !Ref SecurityGroupDescription  # Uses the SecurityGroupDescription parameter
+      SecurityGroupIngress:
+        - CidrIp: !Ref SecurityGroupIngressCIDR  # Allows traffic from specified CIDR range
+          FromPort: !Ref SecurityGroupPort  # Uses the SecurityGroupPort for ingress rules
+          ToPort: !Ref SecurityGroupPort  # Uses the same port for both start and end
+          IpProtocol: tcp  # Specifies TCP protocol
+      VpcId: !Ref MyVPC  # Associates with specific VPC from MyVPC parameter
+
+  # Defines a subnet with a specified VPC and CIDR block using selection
+  DbSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref MyVPC  # Associates the subnet with a specific VPC
+      CidrBlock: !Select [0, !Ref DbSubnetIpBlocks]  # Selects the first CIDR block from DbSubnetIpBlocks
+
+  # Another subnet definition using a different CIDR block
+  DbSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref MyVPC  # Uses the MyVPC parameter for association
+      CidrBlock: !Select [1, !Ref DbSubnetIpBlocks]  # Selects the second CIDR block
+
+  # Third subnet definition, also selecting from the CIDR list
+  DbSubnet3:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref MyVPC  # Ensures proper VPC integration
+      CidrBlock: !Select [2, !Ref DbSubnetIpBlocks]  # Selects the third CIDR block

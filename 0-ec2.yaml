@@ -1,0 +1,8 @@
+Resources:
+# This section defines an EC2 instance resource
+  MyInstance: 
+    Type: AWS::EC2::Instance # Specifies the type of AWS resource, in this case, an EC2 Instance
+    Properties:       
+      AvailabilityZone: us-east-1a # Defines the Availability Zone where the instance will be launched
+      ImageId: ami-0742b4e673072066f # Specifies the ID of the Amazon Machine Image (AMI) to use for the instance
+      InstanceType: t2.micro # Sets the instance type, which determines the hardware of the host computer

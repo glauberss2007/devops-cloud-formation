@@ -1,0 +1,39 @@
+Resources:
+  MyInstance:
+    Type: AWS::EC2::Instance  # Specifies the resource type as an EC2 Instance
+    Properties:
+      AvailabilityZone: us-east-1a  # The Availability Zone where the instance will be launched
+      ImageId: ami-0742b4e673072066f  # The Amazon Machine Image (AMI) ID for the instance
+      InstanceType: t2.micro  # The instance type, specifying the hardware configuration
+      SecurityGroups:
+        - !Ref SSHSecurityGroup  # Reference to the SSH security group defined below
+        - !Ref ServerSecurityGroup  # Reference to the server security group defined below
+
+  MyEIP:
+    Type: AWS::EC2::EIP  # Specifies the resource type as an Elastic IP
+    Properties:
+      InstanceId: !Ref MyInstance  # The instance ID to which the Elastic IP will be attached
+
+  SSHSecurityGroup:
+    Type: AWS::EC2::SecurityGroup  # Specifies the resource type as a Security Group
+    Properties:
+      GroupDescription: Enable SSH access via port 22  # Description of the security group
+      SecurityGroupIngress:
+      - CidrIp: 0.0.0.0/0  # Allow SSH access from any IP address
+        FromPort: 22  # Starting port range for rule
+        IpProtocol: tcp  # Protocol to allow
+        ToPort: 22  # Ending port range for rule
+
+  ServerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup  # Specifies the resource type as a Security Group
+    Properties:
+      GroupDescription: allow connections from specified CIDR ranges  # Description of the security group
+      SecurityGroupIngress:
+      - IpProtocol: tcp  # Protocol to allow
+        FromPort: 80  # Starting port range for rule (HTTP access)
+        ToPort: 80  # Ending port range for rule
+        CidrIp: 0.0.0.0/0  # Allow HTTP access from any IP address
+      - IpProtocol: tcp
+        FromPort: 22  # Starting port range for SSH access
+        ToPort: 22  # Ending port range for SSH access
+        CidrIp: 192.168.1.1/32  # Allow SSH access only from a specific IP address
