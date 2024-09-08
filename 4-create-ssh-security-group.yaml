@@ -1,0 +1,33 @@
+Resources:
+  # Defines a company-wide SSH security group to manage SSH access for multiple teams
+  MyCompanyWideSSHSecurityGroup:
+    # Documentation link for AWS Security Group properties
+    # http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ec2-security-group.html
+    Type: AWS::EC2::SecurityGroup  # Specifies the resource type as an EC2 Security Group
+    Properties:
+      GroupDescription: Enable SSH access via port 22  # Description of the security group's function
+      SecurityGroupIngress:  # Defines the inbound rules for the security group
+        # Ingress rules allowing SSH access from various team networks
+        # Finance team network allowing access via port 22
+      - CidrIp: 10.0.48.0/24  # CIDR block for the finance team
+        FromPort: 22  # Starting port for the rule
+        IpProtocol: tcp  # Specifies the TCP protocol
+        ToPort: 22  # Ending port for the rule
+        # Marketing team network allowing access via port 22
+      - CidrIp: 10.0.112.0/24  # CIDR block for the marketing team
+        FromPort: 22  # Starting port for the rule
+        IpProtocol: tcp  # Specifies the TCP protocol
+        ToPort: 22  # Ending port for the rule
+        # Application team support network allowing access via port 22
+      - CidrIp: 10.0.176.0/24  # CIDR block for the application support team
+        FromPort: 22  # Starting port for the rule
+        IpProtocol: tcp  # Specifies the TCP protocol
+        ToPort: 22  # Ending port for the rule
+
+Outputs:
+  # Outputs the security group reference for use in other stacks or for visibility
+  StackSSHSecurityGroup:
+    Description: The SSH Security Group for our Company  # Description of the output
+    Value: !Ref MyCompanyWideSSHSecurityGroup  # Returns the reference ID of the security group
+    Export:
+      Name: SSHSecurityGroup  # Exports the security group value for reference in other stacks

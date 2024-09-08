@@ -1,0 +1,196 @@
+AWSTemplateFormatVersion: '2010-09-09'  # Specifies the version of the CloudFormation template format
+Description: AWS CloudFormation Sample Template for CFN Init  # Brief description of the template's purpose
+
+Parameters:
+  # Parameter to specify the name of an existing EC2 Key Pair for SSH access
+  KeyName:
+    Description: Name of an existing EC2 KeyPair to enable SSH access to the instances  # Description of the parameter
+    Type: AWS::EC2::KeyPair::KeyName  # Ensures that the input is a valid EC2 KeyPair
+    ConstraintDescription: must be the name of an existing EC2 KeyPair.  # Error message for invalid input
+
+  # Parameter to define the allowed IP address range for SSH access
+  SSHLocation:
+    Description: The IP address range that can be used to SSH to the EC2 instances  # Description of the parameter
+    Type: String  # Sets the parameter type as String
+    MinLength: '9'  # Minimum length for a valid CIDR range (e.g., x.x.x.x/x)
+    MaxLength: '18'  # Maximum length for a valid CIDR range
+    Default: 0.0.0.0/0  # Default value allows SSH access from any IP address (open access)
+    AllowedPattern: "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})"  # Regular expression to validate CIDR format
+    ConstraintDescription: must be a valid IP CIDR range of the form x.x.x.x/x.  # Error message for invalid CIDR input
+
+  # Parameter to define the name of an existing S3 bucket to download files from
+  MyS3BucketName:
+    Description: Name of an existing bucket to download files from  # Description for the S3 bucket parameter
+    Type: String  # Specifies the parameter type as String
+
+  # Parameter to retrieve the Amazon Machine Image (AMI) ID from SSM Parameter Store
+  ImageId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>  # Specifies the parameter type for EC2 Image ID
+    Default: /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2  # Default path for latest Amazon Linux 2 AMI
+
+Resources:
+  # Security group to allow HTTP and SSH access to the EC2 instance
+  WebServerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup  # Specifies that this resource is an EC2 Security Group
+    Properties:
+      GroupDescription: Enable HTTP access via port 80 and SSH access via port 22  # Description of the group's purpose
+      SecurityGroupIngress:  # Inbound rules for the security group
+      - IpProtocol: tcp  # Specifies the protocol as TCP
+        FromPort: 80  # Starting port for HTTP
+        ToPort: 80  # Ending port for HTTP
+        CidrIp: 0.0.0.0/0  # Allows HTTP access from any IP address (open to the public)
+      - IpProtocol: tcp  # Specifies the protocol as TCP
+        FromPort: 22  # Starting port for SSH
+        ToPort: 22  # Ending port for SSH
+        CidrIp: !Ref SSHLocation  # Uses the SSHLocation parameter to define allowed IP addresses for SSH access
+
+  # Defines the EC2 instance that hosts the web server
+  WebServerHost:
+    Type: AWS::EC2::Instance  # Specifies that this resource is an EC2 Instance
+    Metadata:  # Metadata for CloudFormation helper scripts
+      Comment: Install a simple PHP application  # Brief comment about what is being installed
+      AWS::CloudFormation::Init:  # Initialization configuration for CloudFormation
+        config:
+          packages:  # The software packages to be installed
+            yum:  # Using the `yum` package manager
+              httpd: []  # Install the Apache HTTP server
+              php: []  # Install PHP for processing web applications
+          groups:  # User group configuration
+            apache: {}  # Create a group called 'apache'
+          users:  # User configuration
+            "apache":  # Create a user named 'apache'
+              groups:
+                - "apache"  # Add the user to the 'apache' group
+          sources:  # Sources for downloading files
+            "/home/ec2-user/aws-cli": "https://github.com/aws/aws-cli/tarball/master"  # Source for downloading AWS CLI
+          files:  # Configuration files to be created on the instance
+            "/tmp/cwlogs/apacheaccess.conf":  # CloudWatch logging configuration for Apache access logs
+              content: !Sub |
+                [general]
+                state_file= /var/awslogs/agent-state
+                [/var/log/httpd/access_log]
+                file = /var/log/httpd/access_log
+                log_group_name = ${AWS::StackName}
+                log_stream_name = {instance_id}/apache.log
+                datetime_format = %d/%b/%Y:%H:%M:%S
+              mode: '000400'  # File permissions
+              owner: apache  # File owner
+              group: apache  # File group
+            "/var/www/html/index.php":  # Main PHP file for the application
+              content: !Sub |
+                <?php
+                echo '<h1>AWS CloudFormation sample PHP application for ${AWS::StackName}</h1>';  # PHP code to generate a simple web page
+                ?>
+              mode: '000644'  # File permissions
+              owner: apache  # File owner
+              group: apache  # File group
+            "/etc/cfn/cfn-hup.conf":  # Configuration file for cfn-hup
+              content: !Sub |
+                [main]
+                stack=${AWS::StackId}
+                region=${AWS::Region}
+              mode: "000400"  # File permissions
+              owner: "root"  # File owner
+              group: "root"  # File group
+            "/etc/cfn/hooks.d/cfn-auto-reloader.conf":  # Hook configuration for automatic reloading
+              content: !Sub |
+                [cfn-auto-reloader-hook]
+                triggers=post.update
+                path=Resources.WebServerHost.Metadata.AWS::CloudFormation::Init
+                action=/opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource WebServerHost --region ${AWS::Region}
+              mode: "000400"  # File permissions
+              owner: "root"  # File owner
+              group: "root"  # File group
+            # Fetch a webpage from the specified S3 bucket
+            "/var/www/html/webpage.html":
+              source: !Sub "https://${MyS3BucketName}.s3.${AWS::Region}.amazonaws.com/webpage.html"  # Fetches the webpage from S3
+              mode: '000644'  # File permissions
+              owner: apache  # File owner
+              group: apache  # File group
+              authentication: S3AccessCreds  # Specifies S3 access credentials
+          commands:  # Commands to run during initialization
+            test:
+              command: "echo \"$MAGIC\" > test.txt"  # Example command to create a text file
+              env:
+                MAGIC: "I come from the environment!"  # Environment variable for use in commands
+              cwd: "~"  # Current working directory
+          services:  # Service configuration for instance initialization
+            sysvinit:
+              httpd:  # Configuration for the Apache service
+                enabled: 'true'  # Ensures the service is enabled on startup
+                ensureRunning: 'true'  # Ensures the service is running
+              postfix:  # Configuration for the Postfix service (not enabled)
+                enabled: 'false'  # Ensures the service is not enabled
+                ensureRunning: 'false'  # Ensures the service is not running
+              cfn-hup:  # Configuration for cfn-hup service
+                enable: 'true'  # Enables the cfn-hup service
+                ensureRunning: 'true'  # Ensures the cfn-hup service is running
+                files:
+                  - "/etc/cfn/cfn-hup.conf"  # Configuration file for the cfn-hup service
+                  - "/etc/cfn/hooks.d/cfn-auto-reloader.conf"  # Hook configuration file
+
+    CreationPolicy:
+      ResourceSignal:
+        Timeout: PT15M  # Timeout for resource creation signal
+
+    Properties:
+      ImageId: !Ref ImageId  # References the AMI ID retrieved from the parameters
+      KeyName: !Ref KeyName  # References the EC2 key pair for SSH access
+      InstanceType: t2.micro  # Specifies the instance type for the EC2 instance
+      IamInstanceProfile: !Ref InstanceProfile  # References the IAM instance profile for permissions
+      SecurityGroups:
+        - !Ref WebServerSecurityGroup  # References the security group defined above
+      UserData:  # User data script that runs on launch
+        Fn::Base64:
+          !Sub |  # Starts the user data script
+            #!/bin/bash -xe  # Bash script to execute
+            
+            # Install AWS CloudFormation helper scripts
+            yum install -y aws-cfn-bootstrap
+            
+            # Run cfn-init to apply the metadata configuration
+            /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource WebServerHost --region ${AWS::Region}
+            
+            # Signal success or failure of the cfn-init command
+            /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource WebServerHost --region ${AWS::Region}
+
+  # IAM Role for the instance to allow S3 access
+  InstanceRole:
+    Type: AWS::IAM::Role  # Specifies the resource type as an IAM Role
+    Properties:
+      AssumeRolePolicyDocument:  # Policy that grants EC2 permission to assume this role
+        Statement:
+          - Action: 'sts:AssumeRole'  # Specifies the action to assume the role
+            Principal:
+              Service: ec2.amazonaws.com  # Specifies that EC2 can assume this role
+            Effect: Allow  # Grants the necessary permissions
+            Sid: ''  # Statement ID
+      Policies:  # Policies granting access to specified resources
+        - PolicyName: AuthenticatedS3GetObjects  # Name of the policy for identification
+          PolicyDocument:
+            Version: 2012-10-17  # Version of the policy document format
+            Statement:
+              - Action:
+                  - 's3:GetObject'  # Allows the EC2 instance to retrieve objects from S3
+                Resource: !Sub 'arn:aws:s3:::${MyS3BucketName}/*'  # Specifies the S3 bucket ARN for which this policy applies
+                Effect: Allow  # Grants permission to execute the action
+
+  # IAM Instance Profile to associate the IAM role with the EC2 instance
+  InstanceProfile:
+    Type: AWS::IAM::InstanceProfile  # Specifies the resource type as an IAM Instance Profile
+    Properties:
+      Path: /  # Path for the instance profile
+      Roles:
+        - !Ref InstanceRole  # References the InstanceRole to attach to the EC2 instance
+
+Outputs:
+  # Outputs providing useful information about the deployed resources
+  InstanceId:
+    Description: The instance ID of the web server  # Description of the output
+    Value: !Ref WebServerHost  # Outputs the ID of the created EC2 instance
+  WebsiteURL:
+    Value: !Sub 'http://${WebServerHost.PublicDnsName}'  # Outputs the public URL for accessing the web server
+    Description: URL for the newly created LAMP stack  # Description of the output
+  PublicIP:
+    Description: Public IP address of the web server  # Description of the output
+    Value: !GetAtt WebServerHost.PublicIp  # Outputs the public IP address of the EC2 instance

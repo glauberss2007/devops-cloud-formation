@@ -1,0 +1,16 @@
+Parameters:
+  # Parameter to specify the Amazon Machine Image (AMI) ID using SSM Parameter Store
+  ImageId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>  # Specifies that the parameter will retrieve an AMI ID from AWS SSM Parameter Store
+    Default: /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2  # Default path for the latest Amazon Linux 2 AMI
+
+Resources:
+  # Defines the EC2 instance resource
+  MySecureInstance:
+    Type: AWS::EC2::Instance  # Specifies the resource type as an EC2 Instance
+    Properties:
+      ImageId: !Ref ImageId  # Sets the AMI ID for the instance, referencing the ImageId parameter for dynamic retrieval
+      InstanceType: t2.micro  # Specifies the instance type as t2.micro, suitable for low-capacity applications
+      SecurityGroups:
+        # We reference the SSH security group defined in another stack using the ImportValue function
+        - !ImportValue SSHSecurityGroup  # Imports the security group value defined in another CloudFormation stack

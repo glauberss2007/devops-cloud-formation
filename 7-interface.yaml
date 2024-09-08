@@ -1,0 +1,53 @@
+Parameters:
+  # Parameter to specify the EC2 instance type
+  InstanceType:
+    Description: EC2 instance type.  # Description of what this parameter represents
+    Type: String  # Parameter type is String
+    Default: t2.micro  # Default instance type if not specified
+    AllowedValues:  # Restricts allowed values for the instance type
+      - t2.micro  # Low capacity instance suitable for small applications
+      - t2.small  # Slightly larger instance for moderate usage
+      - t2.medium  # Medium capacity instance for applications with increased needs
+      - m3.medium  # Older generation medium instance type
+      - m3.large  # Larger older generation instance for higher workloads
+      - m3.xlarge  # Extra-large older generation instance for substantial requirements
+      - m3.2xlarge  # 2x large instance for demanding workloads
+
+  # Parameter to specify the Subnet ID where the EC2 instance will be deployed
+  SubnetID:
+    Description: Subnet ID  # Description of the parameter
+    Type: AWS::EC2::Subnet::Id  # Specifies the type as a valid Subnet ID
+
+  # Parameter to specify the Security Group ID for the EC2 instance
+  SecurityGroupID:
+    Description: Security Group  # Description of the parameter
+    Type: AWS::EC2::SecurityGroup::Id  # Specifies the type as a valid Security Group ID
+
+Resources:
+  # Defines the EC2 instance resource
+  MyEC2Instance:
+    Type: AWS::EC2::Instance  # Specifies the resource type as an EC2 Instance
+    Properties:
+      AvailabilityZone: us-east-1a  # Specifies the availability zone for the instance
+      ImageId: ami-0742b4e673072066f  # Specifies the AMI ID to use for the instance
+      InstanceType: !Ref InstanceType  # Sets the instance type based on the selected parameter
+      SecurityGroups:
+        - !Ref SecurityGroupID  # References the specified Security Group for the instance
+      SubnetId: !Ref SubnetID  # Sets the Subnet ID where the instance will be launched
+
+Metadata:
+  # Provides additional metadata for the CloudFormation stack interface
+  AWS::CloudFormation::Interface:
+    ParameterGroups:  # Groups related parameters for better organization in the console
+      - Label:
+          default: "Network Configuration"  # Label for the network-related parameters group
+        Parameters:
+          - SubnetID  # Adds SubnetID parameter to this group
+          - SecurityGroupID  # Adds SecurityGroupID parameter to this group
+      - Label:
+          default: "Amazon EC2 Configuration"  # Label for the EC2-related parameters group
+        Parameters:
+          - InstanceType  # Adds InstanceType parameter to this group
+    ParameterLabels:  # Custom labels for parameters to show in the console
+      SubnetID:
+        default: "Which subnet should this be deployed to?"  # Custom prompt for the SubnetID parameter

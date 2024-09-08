@@ -1,0 +1,54 @@
+Parameters:
+  # Parameter to specify the type of EC2 instance
+  InstanceType:
+    Type: String  # The type parameter will hold a string value for the EC2 instance type
+    Default: t2.small  # Default instance type if not specified
+    AllowedValues:  # Restricts allowed values for the instance type
+      - t2.nano  # Low-capacity instance suitable for testing
+      - t2.micro  # Slightly larger than t2.nano, still small and cost-effective
+      - t2.small  # Default and suitable for small applications in production
+
+  # Parameter to specify the environment type (dev or prod)
+  Environment:
+    Type: String  # The environment parameter will be a string indicating dev or prod
+    Default: dev  # Default environment if not specified
+    AllowedValues:  # Restricts allowed environment values
+      - dev  # Development environment
+      - prod  # Production environment
+          
+  # Parameter to retrieve the Amazon Machine Image (AMI) ID from SSM Parameter Store
+  ImageId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>  # Specifies the parameter type for retrieving AMI IDs
+    Default: /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2  # Default path for the latest Amazon Linux 2 AMI
+
+# Rules section to enforce instance type validation based on the environment
+Rules:
+  # Rule to enforce that production instances must be of type t2.small
+  ProdInstanceType:
+    RuleCondition: !Equals 
+      - !Ref Environment  # Check if the environment is set to 'prod'
+      - prod
+    Assertions:
+      - Assert:  # Assertion to enforce the rule
+          !Equals [t2.small, !Ref InstanceType]  # Instance type must be t2.small for production
+        AssertDescription: 'For a production environment, the instance type must be t2.small'
+
+  # Rule to enforce that development instances can only be t2.nano or t2.micro
+  DevInstanceType:
+    RuleCondition: !Equals 
+      - !Ref Environment  # Check if the environment is set to 'dev'
+      - dev
+    Assertions:
+      - Assert:  # Assertion to enforce the rule
+          'Fn::Contains':  # Check if InstanceType is either t2.nano or t2.micro
+            - [t2.nano, t2.micro]  # Allowed values for development
+            - !Ref InstanceType  # The value of the InstanceType parameter
+        AssertDescription: 'For a development environment, the instance type must be t2.nano or t2.micro'
+
+Resources:
+  # Defines an EC2 instance resource
+  MyEC2Instance:
+    Type: AWS::EC2::Instance  # Specifies the resource type as an EC2 Instance
+    Properties:
+      InstanceType: !Ref InstanceType  # Uses the InstanceType parameter for the EC2 instance
+      ImageId: !Ref ImageId  # Retrieves the AMI ID for the instance from the ImageId parameter
