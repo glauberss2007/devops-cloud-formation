@@ -177,6 +177,12 @@ link: [mapping-example](https://github.com/glauberss2007/devops-cloud-formation/
 
 ## Outputs
 
+In AWS CloudFormation, Outputs are used to return information about the resources that you create within a stack. This section allows you to specify values that you want to be easily accessible after the stack is created, making it easier for users to retrieve important information about the infrastructure.
+
+LInk: [Output example template](https://github.com/glauberss2007/devops-cloud-formation/blob/main/4-create-ssh-security-group.yaml)
+
+Link: [Using the output in another template](https://github.com/glauberss2007/devops-cloud-formation/blob/main/4-reference-ssh-security-group.yaml)
+
 ## Conditions
 
 ## Rules
