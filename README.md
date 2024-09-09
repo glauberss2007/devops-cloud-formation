@@ -199,7 +199,13 @@ Link: [Rules hands on](https://github.com/glauberss2007/devops-cloud-formation/b
 
 In AWS CloudFormation, Metadata provides additional information about the resources in your template. It allows you to define custom data that can be useful for documentation, tooling, or reference purposes but does not directly affect the behavior of the infrastructure being provisioned. Metadata is particularly useful for developers, DevOps teams, and deployment automation tools.
 
-## CFN init - use case
+## CFN init and user data
+
+`cfn-init` is a helper script provided by AWS CloudFormation that is used to manage the lifecycle of resources in your CloudFormation stacks. It is primarily used to handle configuration and installation tasks on EC2 instances after they have been launched.
+
+`EC2 User Data` refers to the script or instructions that you can pass to an EC2 instance at launch time. This user data runs automatically when the instance is first booted and is often used for:
+
+Link: [initializing with templates](https://github.com/glauberss2007/devops-cloud-formation/tree/main/8-cfn-init)
 
 ## Nested stack
 
