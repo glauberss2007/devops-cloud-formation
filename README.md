@@ -185,9 +185,19 @@ Link: [Using the output in another template](https://github.com/glauberss2007/de
 
 ## Conditions
 
+Conditions allow you to control the creation of resources or outputs based on specific criteria. They enable you to define logical statements that can determine whether certain resources are created, properties are applied, or outputs are returned, depending on the values of parameters, pseudo parameters, or other conditions.
+
+Link: [Condition use example](https://github.com/glauberss2007/devops-cloud-formation/blob/main/5-conditions.yaml)
+
 ## Rules
 
+In AWS CloudFormation, Rules are a feature that allows you to validate parameter values when launching a CloudFormation stack. They enable the specification of conditions that the input parameters must meet to ensure they conform to certain requirements or constraints. 
+
+Link: [Rules hands on](https://github.com/glauberss2007/devops-cloud-formation/blob/main/6-rules-hands-on.yaml)
+
 ## Metadata
+
+In AWS CloudFormation, Metadata provides additional information about the resources in your template. It allows you to define custom data that can be useful for documentation, tooling, or reference purposes but does not directly affect the behavior of the infrastructure being provisioned. Metadata is particularly useful for developers, DevOps teams, and deployment automation tools.
 
 ## CFN init - use case
 
