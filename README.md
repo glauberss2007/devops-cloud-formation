@@ -94,13 +94,15 @@ The SSM Parameter type refers to parameters stored in the AWS Systems Manager Pa
 
 This CloudFormation template example defines essential parameters and resources for setting up an EC2 environment in AWS. It includes a security group description, a numeric port parameter with value constraints, and a default EC2 instance type. Additionally, it incorporates a masked database admin password for security, a KeyPair for SSH access, and a CIDR IP range for controlling incoming traffic. The template also specifies the VPC and subnet IDs for resource organization, ultimately creating an EC2 instance, security group, and subnets that adhere to user-defined configurations.
 
-[params](https://github.com/glauberss2007/devops-cloud-formation/blob/main/2-parameters-use.yaml)  
+Link: [params-example](https://github.com/glauberss2007/devops-cloud-formation/blob/main/2-parameters-use.yaml)  
 
 ### Example 2
 
 This CloudFormation template example is designed to provision an Amazon EC2 instance while leveraging AWS Systems Manager (SSM) Parameter Store to retrieve configuration values dynamically. 
 
-[ssm-param](https://github.com/glauberss2007/devops-cloud-formation/blob/main/2-ssm-parameters-use.yaml)
+Link: [ssm-param-example](https://github.com/glauberss2007/devops-cloud-formation/blob/main/2-ssm-parameters-use.yaml)
+
+PS: AWS pseudo parameters are predefined variables provided by AWS that can be used in your CloudFormation templates. These parameters represent specific information about the stack or resources being created and do not require any user input. 
 
 ## Resources
 
@@ -165,8 +167,13 @@ In AWS CloudFormation, each resource type can have optional attributes that allo
 
 ## Mapping
 
+Mapping in AWS CloudFormation is a way to create a nested set of key-value pairs that help you customize configurations for different environments, regions, or conditions within your CloudFormation templates. It's essentially a lookup table that allows you to reference different values based on specific input parameters.
 
+### Example
 
+The provided CloudFormation template example is designed to create an Amazon EC2 instance while allowing the user to specify key parameters regarding the deployment environment and ensuring the correct Amazon Machine Image (AMI) is used based on the specified AWS region. 
+
+link: [mapping-example](https://github.com/glauberss2007/devops-cloud-formation/blob/main/3-mappings-ec2.yaml)
 
 ## Outputs
 
