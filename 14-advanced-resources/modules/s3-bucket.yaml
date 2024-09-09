@@ -1,54 +1,37 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: Create a S3 bucket that follows MyCompany's standards
+
 Parameters:
   KMSKeyAlias:
-    Description: >-
-      The alias for your KMS key. If you will leave this field empty KMS key
-      alias won't be created along the key.
+    Description: >
+      The alias for your KMS key. If you leave this field empty, the KMS key
+      alias won't be created. It must start with a letter and cannot begin with 'aws'.
     Type: String
     AllowedPattern: '^(?!aws)([a-zA-Z0-9\-\_\/]){1,32}$|^$'
     MinLength: 0
     MaxLength: 32
-    ConstraintDescription: >-
-      KMS key alias must be at least 1 and no more than 32 characters long, can
-      contain lowercase and uppercase letters, numbers, hyphens, underscores and
-      forward slashes and cannot begin with aws.
+    ConstraintDescription: >
+      KMS key alias must be between 1 and 32 characters long and can include letters, numbers, hyphens, underscores, and slashes.
+
   ReadOnlyArn:
-    Description: >-
-      Provide ARN of an existing Principal (role) that will be granted with read
-      only access to the S3 bucket (e.g.
-      'arn:aws:iam::123456789xxx:role/myS3ROrole'). If not specified, access
-      will be granted to current AWS account:root only. CF deployment will fail
-      and rollback for non-existing ARN.
+    Description: >
+      ARN of an existing IAM role with read-only access to the S3 bucket. If not specified, access is granted only to the current account root.
     Type: String
     Default: ''
-    AllowedPattern: >-
-      ^(arn:aws:iam::\d{12}:role(\/|\/[\w\!\"\#\$\%\'\(\)\*\+\,\-\.\/\:\;\<\=\>\?\@\[\\\]\^\`\{\|\}\~]{1,510}\/)[\w\+\=\,\.\@\-]{1,64})$|^$
-    ConstraintDescription: >-
-      IAM role ARN must start with arn:aws:iam::<12-digit AWS account
-      number>:role/[<path>/]<name of role>. The name of role must be at least 1
-      and no more than 64 characters long, can contain lowercase letters,
-      uppercase letters, numbers, plus (+), equal (=), comma (,), period (.), at
-      (@), underscore (_), and hyphen (-). Path is optional and must not exceed
-      510 characters.
+    AllowedPattern: >
+      ^(arn:aws:iam::\d{12}:role(/|/[\w!#"\$%&'()*+,.\-/:;=?@\[\\\]^_`{|}~]{1,510}/)?[\w+=,.@\-]{1,64})$|^$
+    ConstraintDescription: >
+      Must be a valid IAM role ARN in the format 'arn:aws:iam::<account-number>:role/<role-name>'.
+
   ReadWriteArn:
-    Description: >-
-      Provide ARN of an existing Principal (role) that will be granted with read
-      and write access to the S3 bucket (e.g.
-      'arn:aws:iam::123456789xxx:role/myS3RWrole'). If not specified, access
-      will be granted to current AWS account:root only. CF deployment will fail
-      and rollback for non-existing ARN.
+    Description: >
+      ARN of an existing IAM role with read and write access to the S3 bucket. If not specified, access is granted only to the current account root.
     Type: String
     Default: ''
-    AllowedPattern: >-
-      ^(arn:aws:iam::\d{12}:role(\/|\/[\w\!\"\#\$\%\'\(\)\*\+\,\-\.\/\:\;\<\=\>\?\@\[\\\]\^\`\{\|\}\~]{1,510}\/)[\w\+\=\,\.\@\-]{1,64})$|^$
-    ConstraintDescription: >-
-      IAM role ARN must start with arn:aws:iam::<12-digit AWS account
-      number>:role/[<path>/]<name of role>. The name of role must be at least 1
-      and no more than 64 characters long, can contain lowercase letters,
-      uppercase letters, numbers, plus (+), equal (=), comma (,), period (.), at
-      (@), underscore (_), and hyphen (-). Path is optional and must not exceed
-      510 characters.
+    AllowedPattern: >
+      ^(arn:aws:iam::\d{12}:role(/|/[\w!#"\$%&'()*+,.\-/:;=?@\[\\\]^_`{|}~]{1,510}/)?[\w+=,.@\-]{1,64})$|^$
+    ConstraintDescription: >
+      Must be a valid IAM role ARN in the format 'arn:aws:iam::<account-number>:role/<role-name>'.
 
 Resources:
   KmsKey:
@@ -56,19 +39,19 @@ Resources:
     DeletionPolicy: Delete
     UpdateReplacePolicy: Delete
     Properties:
-      Enabled: true
-      EnableKeyRotation: true
+      Enabled: true  # Enables the KMS key
+      EnableKeyRotation: true  # Automatically rotates the key
       KeyPolicy:
         Version: 2012-10-17
         Statement:
-          - Sid: 'Give AWS account:root full control over the KMS key'
+          - Sid: 'Allow full control to account root'
             Effect: Allow
             Principal:
               AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
             Action:
               - 'kms:*'
             Resource: '*'
-          - Sid: 'Give ReadOnlyRole access to use KMS key for decryption'
+          - Sid: 'Allow decrypt access to ReadOnlyRole'
             Effect: Allow
             Principal:
               AWS: !Ref ReadOnlyArn
@@ -76,7 +59,7 @@ Resources:
               - 'kms:Decrypt'
               - 'kms:DescribeKey'
             Resource: '*'
-          - Sid: 'Give the ReadWriteRole access to use KMS key for encryption and decryption'
+          - Sid: 'Allow encrypt/decrypt access to ReadWriteRole'
             Effect: Allow
             Principal:
               AWS: !Ref ReadWriteArn
@@ -91,29 +74,29 @@ Resources:
   KmsKeyAlias:
     Type: AWS::KMS::Alias
     Properties:
-      AliasName: !Sub 'alias/${KMSKeyAlias}'
-      TargetKeyId: !Ref KmsKey
+      AliasName: !Sub 'alias/${KMSKeyAlias}'  # Sets the alias for the KMS key
+      TargetKeyId: !Ref KmsKey  # Associates the alias with the created KMS key
 
   Bucket:
     Type: AWS::S3::Bucket
     Properties:
-      AccessControl: BucketOwnerFullControl
+      AccessControl: BucketOwnerFullControl  # Provides full control to the bucket owner
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
-              KMSMasterKeyID: !Ref KmsKey
-              SSEAlgorithm: 'aws:kms'
-      BucketName: !Sub '${AWS::StackName}-${AWS::AccountId}-${AWS::Region}'
+              KMSMasterKeyID: !Ref KmsKey  # Uses the KMS key for bucket encryption
+              SSEAlgorithm: 'aws:kms'  # Specifies encryption using AWS KMS
+      BucketName: !Sub '${AWS::StackName}-${AWS::AccountId}-${AWS::Region}'  # Ensures a unique bucket name
       PublicAccessBlockConfiguration:
-        BlockPublicAcls: true
-        IgnorePublicAcls: true
-        BlockPublicPolicy: true
-        RestrictPublicBuckets: true
+        BlockPublicAcls: true  # Prevents public ACLs
+        IgnorePublicAcls: true  # Ignores any public ACLs already set
+        BlockPublicPolicy: true  # Blocks public bucket policies
+        RestrictPublicBuckets: true  # Restricts public bucket status
 
   BucketPolicy:
     Type: AWS::S3::BucketPolicy
     Properties:
-      Bucket: !Ref Bucket
+      Bucket: !Ref Bucket  # Associates the policy with the bucket
       PolicyDocument:
         Version: 2012-10-17
         Statement:
@@ -124,7 +107,7 @@ Resources:
             Resource: !Sub 'arn:aws:s3:::${Bucket}/*'
             Condition:
               StringEquals:
-                's3:x-amz-server-side-encryption': AES256
+                's3:x-amz-server-side-encryption': 'AES256'  # Ensures correct encryption header
           - Sid: DenyPublicReadACL
             Effect: Deny
             Principal: '*'
@@ -137,7 +120,7 @@ Resources:
                 's3:x-amz-acl':
                   - public-read
                   - public-read-write
-                  - authenticated-read
+                  - authenticated-read  # Denies setting public ACLs
           - Sid: DenyPublicReadGrant
             Effect: Deny
             Principal: '*'
@@ -149,7 +132,7 @@ Resources:
               StringLike:
                 's3:x-amz-grant-read':
                   - '*http://acs.amazonaws.com/groups/global/AllUsers*'
-                  - '*http://acs.amazonaws.com/groups/global/AuthenticatedUsers*'
+                  - '*http://acs.amazonaws.com/groups/global/AuthenticatedUsers*'  # Deny grants that allow public read
           - Sid: DenyNonHttpsConnections
             Effect: Deny
             Principal: '*'
@@ -159,19 +142,19 @@ Resources:
             Resource: !Sub 'arn:aws:s3:::${Bucket}/*'
             Condition:
               Bool:
-                'aws:SecureTransport': false
-          - Sid: 'Give ReadOnlyRole access to get objects from bucket and list bucket'
+                'aws:SecureTransport': false  # Denies non-HTTPS requests
+          - Sid: 'Allow ReadOnlyRole access'
             Effect: Allow
             Principal:
               AWS: !Ref ReadOnlyArn
             Action:
               - 's3:GetObject'
               - 's3:GetObjectTagging'
-              - 's3:ListBucket'
+              - 's3:ListBucket'  # Allows ReadOnlyRole to access and list bucket objects
             Resource:
               - !Sub 'arn:aws:s3:::${Bucket}'
               - !Sub 'arn:aws:s3:::${Bucket}/*'
-          - Sid: 'Give the ReadWriteRole access to get and put objects from and to bucket and list bucket and multipart uploads'
+          - Sid: 'Allow ReadWriteRole access'
             Effect: Allow
             Principal:
               AWS: !Ref ReadWriteArn
@@ -182,7 +165,7 @@ Resources:
               - 's3:GetObjectTagging'
               - 's3:ListBucket'
               - 's3:PutObject'
-              - 's3:PutObjectTagging'
+              - 's3:PutObjectTagging'  # Allows ReadWriteRole to manage objects
             Resource:
               - !Sub 'arn:aws:s3:::${Bucket}'
               - !Sub 'arn:aws:s3:::${Bucket}/*'
@@ -190,13 +173,16 @@ Resources:
 Outputs:
   BucketArn:
     Description: ARN of the bucket created.
-    Value: !GetAtt Bucket.Arn
+    Value: !GetAtt Bucket.Arn  # Outputs the bucket's ARN for reference
+
   BucketName:
     Description: Name of the bucket created.
-    Value: !Ref Bucket
+    Value: !Ref Bucket  # Outputs the name of the bucket
+
   KmsKeyAlias:
-    Description: Alias of SSE-KMS Customer Managed Key used to encrypt S3 bucket content.
-    Value: !Ref KmsKeyAlias
+    Description: Alias of the SSE-KMS Customer Managed Key used to encrypt S3 bucket content.
+    Value: !Ref KmsKeyAlias  # Outputs the KMS key alias
+
   KmsKeyArn:
-    Description: ARN of SSE-KMS Customer Managed Key used to encrypt S3 bucket content.
-    Value: !GetAtt KmsKey.Arn
+    Description: ARN of the SSE-KMS Customer Managed Key used to encrypt S3 bucket content.
+    Value: !GetAtt KmsKey.Arn  # Outputs the KMS key's ARN

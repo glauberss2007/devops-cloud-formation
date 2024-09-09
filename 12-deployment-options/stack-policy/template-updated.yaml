@@ -1,32 +1,32 @@
 Parameters:
   ImageId:
-    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
-    Default: /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>  # Parameter type to retrieve the AMI ID from the SSM Parameter Store
+    Default: /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2  # Default value for the AMI, pointing to the latest Amazon Linux 2 image
 
 Resources:
-  MyInstance:
-    Type: AWS::EC2::Instance
+  MyInstance:  # Define the EC2 instance resource
+    Type: AWS::EC2::Instance  # Resource type for creating an Amazon EC2 instance
     Properties:
-      ImageId: !Ref ImageId
-      InstanceType: t2.nano
-      
-  MyDDBTable:
-    Type: AWS::DynamoDB::Table
+      ImageId: !Ref ImageId  # Reference the ImageId parameter to specify the AMI for the instance
+      InstanceType: t2.nano  # Specify the instance type; t2.nano is a low-cost option suitable for lightweight applications
+
+  MyDDBTable:  # Define the DynamoDB table resource
+    Type: AWS::DynamoDB::Table  # Resource type for creating an Amazon DynamoDB table
     Properties:
-      AttributeDefinitions:
+      AttributeDefinitions:  # Define the attributes used in the table
         - 
-          AttributeName: "UserID"
-          AttributeType: "S"
+          AttributeName: "UserID"  # The first attribute used as the partition key
+          AttributeType: "S"  # Data type for UserID; "S" indicates a String
         - 
-          AttributeName: "Name"
-          AttributeType: "S"
-      KeySchema:
+          AttributeName: "Name"  # The second attribute used as the sort key
+          AttributeType: "S"  # Data type for Name; "S" indicates a String
+      KeySchema:  # Define the key schema of the table
         -
-          AttributeName: "UserID"
-          KeyType: "HASH"
+          AttributeName: "UserID"  # Partition key (HASH) for the table
+          KeyType: "HASH"  # The type of key being used
         -
-          AttributeName: "Name"
-          KeyType: "RANGE"
-      ProvisionedThroughput:
-        ReadCapacityUnits: 1
-        WriteCapacityUnits: 1
+          AttributeName: "Name"  # Sort key (RANGE) for the table
+          KeyType: "RANGE"  # The type of key being used
+      ProvisionedThroughput:  # Define the read and write capacity for the table
+        ReadCapacityUnits: 1  # Number of read capacity units provisioned
+        WriteCapacityUnits: 1  # Number of write capacity units provisioned

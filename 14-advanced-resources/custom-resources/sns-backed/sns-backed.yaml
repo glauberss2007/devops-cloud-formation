@@ -1,0 +1,27 @@
+Resources:
+  # Custom resource to perform Selenium tests
+  MySeleniumTest:
+    Type: Custom::SeleniumTester
+    Properties:
+      # The ServiceToken specifies the ARN of the Lambda function or SNS topic 
+      # that backs the custom resource. This is imported from an existing value,
+      # typically created elsewhere in the stack or another stack.
+      ServiceToken: !ImportValue SNSTopicCustomResource
+      
+      # A custom property presumably used by the backing Lambda to identify the type of test.
+      seleniumTester: 'SeleniumTest'
+      
+      # List of endpoints (URLs) to be tested by Selenium.
+      endpoints: 
+        - "http://mysite.com"
+        - "http://myecommercesite.com"
+        - "http://search.mysite.com"
+      
+      # Specifies how many times per hour each endpoint should be tested.
+      # It appears each number maps to a test frequency, but it needs to match the number of endpoints 
+      # or be documented how these are matched.
+      frequencyOfTestsPerHour: 
+        - "3"  # mysite.com to be tested 3 times per hour
+        - "2"  # myecommercesite.com to be tested 2 times per hour
+        - "4"  # search.mysite.com to be tested 4 times per hour
+        - "1"  # Could be an endpoint to add or logic might be implicit to cycle through above three.

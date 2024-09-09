@@ -1,26 +1,26 @@
 Parameters:
   ImageId:
-    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
-    Default: /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>  # Parameter type for retrieving the AMI ID from the SSM Parameter Store
+    Default: /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2  # Default value for the AMI pointing to the latest Amazon Linux 2 image
 
 Resources:
-  MyInstance:
-    Type: AWS::EC2::Instance
+  MyInstance:  # Define an EC2 instance resource
+    Type: AWS::EC2::Instance  # Resource type for creating an Amazon EC2 instance
     Properties:
-      ImageId: !Ref ImageId
-      InstanceType: t2.micro
-      
-  MyDDBTable:
-    Type: AWS::DynamoDB::Table
+      ImageId: !Ref ImageId  # Reference to the ImageId parameter to specify the AMI to use for this instance
+      InstanceType: t2.micro  # Specifies the instance type; t2.micro is a low-cost instance type eligible for the AWS Free Tier
+
+  MyDDBTable:  # Define a DynamoDB table resource
+    Type: AWS::DynamoDB::Table  # Resource type for creating an Amazon DynamoDB table
     Properties:
-      AttributeDefinitions:
+      AttributeDefinitions:  # Define the attributes for the table
         - 
-          AttributeName: "UserID"
-          AttributeType: "S"
-      KeySchema:
+          AttributeName: "UserID"  # The name of the attribute to serve as the partition key
+          AttributeType: "S"  # Specifies that the UserID attribute is of type String
+      KeySchema:  # Defines the key schema for the table
         -
-          AttributeName: "UserID"
-          KeyType: "HASH"
-      ProvisionedThroughput:
-        ReadCapacityUnits: 1
-        WriteCapacityUnits: 1
+          AttributeName: "UserID"  # The partition key for the table
+          KeyType: "HASH"  # HASH key type indicates this is the primary key for partitioning data
+      ProvisionedThroughput:  # Configure the read and write capacity for the DynamoDB table
+        ReadCapacityUnits: 1  # Number of read capacity units provisioned for the table
+        WriteCapacityUnits: 1  # Number of write capacity units provisioned for the table

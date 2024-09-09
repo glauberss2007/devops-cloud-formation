@@ -1,0 +1,105 @@
+Parameters:
+  # Parameter for specifying the name of the S3 bucket to be created
+  S3BucketName:
+    Type: String
+    Description: "S3 bucket to create"
+    AllowedPattern: "[a-zA-Z][a-zA-Z0-9_-]*"  # Bucket name must start with a letter and may include certain characters
+
+Resources:
+  # S3 Bucket resource definition
+  SampleS3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref S3BucketName  # The name of the bucket is set by the S3BucketName parameter
+    DeletionPolicy: Delete  # When the stack is deleted, also delete the bucket and its contents
+
+  # Custom resource to perform actions related to S3, backed by a Lambda function
+  S3CustomResource:
+    Type: Custom::S3CustomResource
+    Properties:
+      ServiceToken: !GetAtt AWSLambdaFunction.Arn  # ARN of the Lambda function that handles this custom resource's events
+      bucket_name: !Ref SampleS3Bucket  # Passes the S3 bucket name to the Lambda function for custom processing
+
+  # Lambda function that performs operations on the S3 bucket
+  AWSLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Description: "Empty an S3 bucket!"  # Describes the purpose of the Lambda function
+      FunctionName: !Sub '${AWS::StackName}-${AWS::Region}-lambda'  # Sets a unique function name using stack and region
+      Handler: index.handler  # The handler function in the provided code
+      Role: !GetAtt AWSLambdaExecutionRole.Arn  # IAM role ARN with appropriate permissions for the Lambda function
+      Timeout: 360  # Maximum time in seconds that the function can run
+      Runtime: python3.8  # The runtime environment for executing the function
+      Code:
+        ZipFile: |  # Inline Lambda function code
+          import boto3
+          import cfnresponse
+          # cfnresponse module helps send responses to CloudFormation
+
+          def handler(event, context):
+              # Determine the CloudFormation event type (Create, Update, Delete)
+              the_event = event['RequestType']
+              print("The event is: ", str(the_event))
+
+              response_data = {}
+              s3 = boto3.client('s3')
+
+              # Get the bucket name from the event
+              bucket_name = event['ResourceProperties']['bucket_name']
+
+              try:
+                  if the_event == 'Delete':
+                      # For 'Delete' event, empty the bucket
+                      print("Deleting S3 content...")
+                      b_operator = boto3.resource('s3')
+                      b_operator.Bucket(str(bucket_name)).objects.all().delete()
+
+                  # Signal success back to CloudFormation
+                  print("Execution successful!")
+                  cfnresponse.send(event, context, cfnresponse.SUCCESS, response_data)
+              except Exception as e:
+                  # In case of failure, log exception and send failure response
+                  print("Execution failed...")
+                  print(str(e))
+                  response_data['Data'] = str(e)
+                  cfnresponse.send(event, context, cfnresponse.FAILED, response_data)
+
+  # IAM role that allows the Lambda function to perform specified actions
+  AWSLambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Action:
+          - sts:AssumeRole
+          Effect: Allow  # Allows Lambda functions to assume this role
+          Principal:
+            Service:
+            - lambda.amazonaws.com  # Designates Lambda as the trusted entity
+        Version: '2012-10-17'
+      Path: "/"
+      Policies:
+      - PolicyDocument:
+          Statement:
+          - Action:
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:PutLogEvents  # Allows logging actions for the Lambda function
+            Effect: Allow
+            Resource: arn:aws:logs:*:*:*  # Resource identifier for CloudWatch logs
+          Version: '2012-10-17'
+        PolicyName: !Sub ${AWS::StackName}-${AWS::Region}-AWSLambda-CW  # CloudWatch policy name
+
+      - PolicyDocument:
+          Statement:
+          - Action:
+            - s3:PutObject
+            - s3:DeleteObject
+            - s3:List*  # Allows S3 actions necessary for bucket management
+            Effect: Allow
+            Resource:
+            - !Sub arn:aws:s3:::${SampleS3Bucket}  # ARN for the S3 bucket
+            - !Sub arn:aws:s3:::${SampleS3Bucket}/*  # ARN for all objects within the bucket
+          Version: '2012-10-17'
+        PolicyName: !Sub ${AWS::StackName}-${AWS::Region}-AWSLambda-S3  # S3 policy name
+      RoleName: !Sub ${AWS::StackName}-${AWS::Region}-AWSLambdaExecutionRole  # Name for the IAM role

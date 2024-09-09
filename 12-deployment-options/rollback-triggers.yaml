@@ -1,31 +1,37 @@
 Parameters:
   TableName:
-    Type: String
-    Description: The name of our DynamoDB table
+    Type: String  # Parameter type for the name of the DynamoDB table
+    Description: The name of our DynamoDB table  # Description of the parameter's purpose
+
   RCU:
-    Type: Number
-    Default: 5
-    Description: How many RCU to provide to the table
-    
+    Type: Number  # Parameter type for the number of Read Capacity Units
+    Default: 5  # Default value for Read Capacity Units if not specified
+    Description: How many RCU to provide to the table  # Description of the parameter's purpose
+
 Resources:
-  MyDDBTable:
-    Type: AWS::DynamoDB::Table
+  MyDDBTable:  # Define the DynamoDB table resource
+    Type: AWS::DynamoDB::Table  # Resource type for creating an Amazon DynamoDB table
     Properties:
-      TableName: !Ref TableName
-      AttributeDefinitions:
+      TableName: !Ref TableName  # Set the table name using the value provided in the TableName parameter
+      
+      AttributeDefinitions:  # Define the attributes for the DynamoDB table
         - 
-          AttributeName: "Album"
-          AttributeType: "S"
+          AttributeName: "Album"  # The name of the first attribute (used as the partition key)
+          AttributeType: "S"  # The data type for the Album attribute; "S" indicates a String
+            
         - 
-          AttributeName: "Artist"
-          AttributeType: "S"
-      KeySchema:
-        -
-          AttributeName: "Album"
-          KeyType: "HASH"
-        -
-          AttributeName: "Artist"
-          KeyType: "RANGE"
-      ProvisionedThroughput:
-        ReadCapacityUnits: !Ref RCU
-        WriteCapacityUnits: 5  
+          AttributeName: "Artist"  # The name of the second attribute (used as the sort key)
+          AttributeType: "S"  # The data type for the Artist attribute; "S" indicates a String
+            
+      KeySchema:  # Define the key schema for the table
+        - 
+          AttributeName: "Album"  # The partition key for the table
+          KeyType: "HASH"  # Specifies this attribute as the HASH key for partitioning data
+            
+        - 
+          AttributeName: "Artist"  # The sort key for the table
+          KeyType: "RANGE"  # Specifies this attribute as the RANGE key to sort items within the same partition
+            
+      ProvisionedThroughput:  # Configure read and write capacity for the table
+        ReadCapacityUnits: !Ref RCU  # Set the number of read capacity units using the RCU parameter
+        WriteCapacityUnits: 5  # Set a fixed number of write capacity units for the table 

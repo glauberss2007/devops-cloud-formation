@@ -1,0 +1,27 @@
+Parameters:
+  # Parameter to specify the IP address of the web server 
+  ServerIP:
+    Type: String
+    Description: Web Server IP  # Description provides context for the parameter's use
+
+  # Parameter to specify the port number the server listens on, defaults to 8080
+  Port:
+    Type: Number  # Ensures the parameter is treated as a number
+    Default: 8080 # Default port value if none is provided
+
+Resources:
+  # SNS Topic resource which can send notifications via HTTP
+  CustomResourceSNSTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      Subscription:
+        - Endpoint: 
+            !Sub "http://${ServerIP}:${Port}" # Dynamically constructs the URL for HTTP subscription using parameters
+          Protocol: http  # Specifies HTTP as the protocol used for the SNS subscription
+
+Outputs:
+  # Output section exposes values or ARNs for use in other stacks or for informational purposes
+  SNSTopicCustomResource:
+    Value: !Ref CustomResourceSNSTopic  # References the SNS topic, returning its ARN or logical resource ID
+    Export:
+      Name: SNSTopicCustomResource  # Makes this output available for import in other CloudFormation stacks

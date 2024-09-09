@@ -1,31 +1,31 @@
 Parameters:
   ImageId:
-    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
-    Default: /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>  # Parameter to retrieve the AMI ID from the SSM Parameter Store
+    Default: /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2  # Default value pointing to the latest Amazon Linux 2 AMI
 
 Resources:
-  ASG:
-    Type: AWS::AutoScaling::AutoScalingGroup
+  ASG:  # Define the Auto Scaling Group
+    Type: AWS::AutoScaling::AutoScalingGroup  # Resource type for creating the Auto Scaling Group
     Properties:
-      AvailabilityZones: 
-        - !Select 
-          - 0
-          - Fn::GetAZs: !Ref 'AWS::Region'
-      DesiredCapacity: "1"
-      LaunchConfigurationName: !Ref LC
-      MaxSize: "1"
-      MinSize: "1"
+      AvailabilityZones:  # Specifies the Availability Zones to use for the ASG
+        - !Select  # Selects the first Availability Zone from the list of available zones
+          - 0  # Index for the first Availability Zone
+          - Fn::GetAZs: !Ref 'AWS::Region'  # Gets the list of Availability Zones for the current region
+      DesiredCapacity: "1"  # The desired number of instances to run in the ASG
+      LaunchConfigurationName: !Ref LC  # References the Launch Configuration resource, used to launch instances
+      MaxSize: "1"  # The maximum number of instances in the ASG
+      MinSize: "1"  # The minimum number of instances in the ASG
 
-  LC:
-    Type: AWS::AutoScaling::LaunchConfiguration
-    Properties: 
-      ImageId: !Ref ImageId
-      InstanceType: t2.nano
+  LC:  # Define the Launch Configuration
+    Type: AWS::AutoScaling::LaunchConfiguration  # Resource type for creating a Launch Configuration
+    Properties:
+      ImageId: !Ref ImageId  # AMI ID for the instances, retrieved from the ImageId parameter
+      InstanceType: t2.nano  # Specify the instance type to be t2.nano (cost-effective instance type)
 
-  WaitCondition:
-    Type: AWS::CloudFormation::WaitCondition
-    DependsOn: ASG
-    CreationPolicy:
-      ResourceSignal:
-        Count: 1
-        Timeout: PT1M
+  WaitCondition:  # Define a Wait Condition to ensure stack creation waits for a signal
+    Type: AWS::CloudFormation::WaitCondition  # Resource type for a Wait Condition
+    DependsOn: ASG  # Ensure the Wait Condition only runs after the ASG has been created
+    CreationPolicy:  # Defines the creation policy for the Wait Condition
+      ResourceSignal:  # Waits for signals from resources
+        Count: 1  # Number of signals required to proceed (in this case, one)
+        Timeout: PT1M  # Timeout period for receiving signals (1 minute)

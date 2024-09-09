@@ -1,22 +1,23 @@
 Parameters:
   ImageId:
-    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
-    Default: /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>  # Parameter type used to retrieve the AMI ID from the AWS Systems Manager Parameter Store
+    Default: /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2  # Default value pointing to the latest Amazon Linux 2 AMI
 
 Resources:
-  ASG:
-    Type: AWS::AutoScaling::AutoScalingGroup
+  ASG:  # Define the Auto Scaling Group resource
+    Type: AWS::AutoScaling::AutoScalingGroup  # Resource type for creating the Auto Scaling Group
     Properties:
-      AvailabilityZones: 
-        - !Select 
-          - 0
-          - Fn::GetAZs: !Ref 'AWS::Region'
-      DesiredCapacity: "1"
-      LaunchConfigurationName: !Ref LC
-      MaxSize: "1"
-      MinSize: "1"
-  LC:
-    Type: AWS::AutoScaling::LaunchConfiguration
+      AvailabilityZones:  # List of Availability Zones to launch the instances in
+        - !Select  # Selects an item from a list
+          - 0  # Index for the first Availability Zone in the list
+          - Fn::GetAZs: !Ref 'AWS::Region'  # Retrieves the list of Availability Zones for the specified region
+      DesiredCapacity: "1"  # The target number of instances the Auto Scaling Group should maintain
+      LaunchConfigurationName: !Ref LC  # References the Launch Configuration that defines instance settings
+      MaxSize: "1"  # The maximum number of instances allowed in the Auto Scaling Group
+      MinSize: "1"  # The minimum number of instances required to be running in the Auto Scaling Group
+
+  LC:  # Define the Launch Configuration resource
+    Type: AWS::AutoScaling::LaunchConfiguration  # Resource type for creating the Launch Configuration
     Properties: 
-      ImageId: !Ref ImageId
-      InstanceType: t2.micro
+      ImageId: !Ref ImageId  # ID of the AMI to use for instance launch, retrieved from the ImageId parameter
+      InstanceType: t2.micro  # Specifies the type of instance to launch; t2.micro is part of the AWS Free Tier
