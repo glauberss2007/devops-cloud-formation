@@ -201,15 +201,51 @@ In AWS CloudFormation, Metadata provides additional information about the resour
 
 ## CFN init and user data
 
-`cfn-init` is a helper script provided by AWS CloudFormation that is used to manage the lifecycle of resources in your CloudFormation stacks. It is primarily used to handle configuration and installation tasks on EC2 instances after they have been launched.
+`cfn-init` is a helper script provided by AWS CloudFormation that is used to manage the lifecycle of resources in your CloudFormation stacks. It is primarily used to handle configuration and installation tasks on EC2 instances after they have been launched. Here are some of the configurations you can perform with `cfn-init`:
+
+- **Packages**: You can specify software packages to be installed on your instance. This includes specifying package manager types (like `apt`, `yum`, or `msi` for Windows) and listing packages to be installed.
+
+- **Groups and Users**: You can create Linux groups and users directly within CloudFormation templates. This makes it easier to set up initial user configurations and security groups.
+
+- **Sources**: You can manage and download resources such as application source code or configuration files from locations like S3 buckets or public URLs.
+
+- **Files**: Specify local files you need to create or manage on your instances. This might include configuration files or scripts that `cfn-init` can write to disk.
+
+- **Authentication**: The `auth` section in a CloudFormation template is used to facilitate authentication, particularly for applications and dependencies stored in private repositories like a private S3 bucket.
+
+- **Commands**: Execute commands at different stages of instance launch to, for example, complete the software setup process or initialize services.
+
+- **Services**: Define services to be enabled, started, stopped, or restarted at specific stages of instance initialization.
+
+- **cfn-hup**: This is a daemon that checks for updates to CloudFormation metadata and can trigger actions such as redeploying applications, reconfiguring software, or managing rolling updates. It's crucial when using `cfn-init` for applying updates without requiring a complete instance reboot.
+
+- **Creation Policy**: It is used to ensure that the stack resources are created successfully before being marked complete. You can use this along with `cfn-signal` to signal that an EC2 instance has been successfully created and all user data and `cfn-init` tasks have been applied.
 
 `EC2 User Data` refers to the script or instructions that you can pass to an EC2 instance at launch time. This user data runs automatically when the instance is first booted and is often used for:
 
-Link: [initializing with templates](https://github.com/glauberss2007/devops-cloud-formation/tree/main/8-cfn-init)
+- Installing packages
+- Running scripts
+- Configuring settings
+
+For more template examples and how to initialize with configurations using `cfn-init`, you can check the following [link](https://github.com/glauberss2007/devops-cloud-formation/tree/main/8-cfn-init).
+
+## Drift
+
+CloudFormation Drift refers to a situation where the actual state of resources provisioned and managed by AWS CloudFormation differs from the expected state as defined in the CloudFormation template. This can occur when changes are made directly to the resources outside of CloudFormation's control, such as manual updates in the AWS Management Console or API calls that modify resource settings.
+
+AWS CloudFormation provides drift detection capabilities to help identify resources that have drifted from their expected configuration. Using drift detection, you can:
+
+- **Identify Drifted Resources**: Determine which resources have drifted and see the properties that differ from the expected configuration.
+- **Mitigate Configuration Issues**: Use drift detection reports to understand discrepancies and decide whether to update the CloudFormation stack to correct the drifts or integrate these changes back into the template if they are desired.
+- **Audit and Compliance**: Ensure that resources remain compliant with desired configurations over time by regularly checking for drifts.
+
+You can check the following example [link](https://github.com/glauberss2007/devops-cloud-formation/blob/main/9-drift-sg.yaml).
 
 ## Nested stack
 
-## Stracksets
+To create a nested stack, you define a AWS::CloudFormation::Stack resource in the parent stack’s template. This resource type points to another CloudFormation template (the nested stack) stored in an S3 bucket, or includes the template directly by an HTTP URL or inline template.
+
+## Stacksets
 
 ## Deployments
 
@@ -217,7 +253,7 @@ Link: [initializing with templates](https://github.com/glauberss2007/devops-clou
 
 ## Advanced
 
-## IMports, SAM, CDK & Macros
+## Imports, SAM, CDK & Macros
 
 ## 3rd projects for CF
 
