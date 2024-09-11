@@ -277,7 +277,11 @@ CI/CD (Continuous Integration and Continuous Deployment) with AWS CodePipeline a
 
 You can check the following examples [cd with code pipeline](https://github.com/glauberss2007/devops-cloud-formation/tree/main/13-cd-with-codepipeline)
 
-## Advanced
+## Custom resources
+
+CloudFormation custom resources enable the extension of AWS CloudFormation functionalities to manage resources not natively supported or to execute custom logic during stack operations. In your CloudFormation template, you define a custom resource and provide a ServiceToken, usually pointing to an AWS Lambda function. This Lambda function contains the logic necessary to create, update, or delete the custom resources as needed. When CloudFormation processes stack operations that involve these custom resources, it triggers the Lambda function with specific event data indicating the request type (Create, Update, Delete), along with a unique request ID and resource properties. The Lambda function performs the required actions based on this event data and must send a response back to CloudFormation to indicate success or failure and provide any relevant data or resource attributes. For long-running operations, asynchronous handling may be required using AWS Step Functions or other mechanisms to ensure proper communication with CloudFormation.
+
+You can check the following examples: [custom resources](https://github.com/glauberss2007/devops-cloud-formation/tree/main/14-advanced-resources)
 
 ## Imports, SAM, CDK & Macros
 
