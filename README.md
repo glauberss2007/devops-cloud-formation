@@ -271,6 +271,12 @@ You can check the following examples [deployments example](https://github.com/gl
 
 ## CI/CD
 
+![image](https://github.com/user-attachments/assets/0a2cadbb-75fe-419b-999a-69577b778444)
+
+CI/CD (Continuous Integration and Continuous Deployment) with AWS CodePipeline and AWS CloudFormation streamlines the automation of integrating, testing, and deploying application and infrastructure changes. In this setup, the process starts with CodePipeline retrieving code from a version control system like AWS CodeCommit or GitHub. The code is then built and tested using AWS CodeBuild, which may include validating CloudFormation templates. Successful builds lead to the deployment stage, where AWS CloudFormation automates the provisioning and updating of AWS resources as defined in the templates, ensuring consistent and reliable environments. 
+
+You can check the following examples [cd with code pipeline](https://github.com/glauberss2007/devops-cloud-formation/tree/main/13-cd-with-codepipeline)
+
 ## Advanced
 
 ## Imports, SAM, CDK & Macros
