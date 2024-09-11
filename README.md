@@ -241,13 +241,33 @@ AWS CloudFormation provides drift detection capabilities to help identify resour
 
 You can check the following example [link](https://github.com/glauberss2007/devops-cloud-formation/blob/main/9-drift-sg.yaml).
 
-## Nested stack
+## Nested stack and cross stack
 
-To create a nested stack, you define a AWS::CloudFormation::Stack resource in the parent stack’s template. This resource type points to another CloudFormation template (the nested stack) stored in an S3 bucket, or includes the template directly by an HTTP URL or inline template.
+In AWS CloudFormation, nested stacks and cross-stack references are two strategies used to manage resources across different CloudFormation templates efficiently. Nested stacks allow you to create stacks within other stacks, essentially enabling you to include child templates as part of a parent template. This approach is particularly useful for breaking down complex infrastructure designs into smaller, more manageable modules, enhancing readability and reusability. The child templates can be called upon by defining an `AWS::CloudFormation::Stack` resource within the parent template, which then deploys the child as part of the parent stack. This modular design encourages the decomposition of large architectures into simpler parts, allows for reusability across different parent stacks, and provides a way to update components without affecting the entire infrastructure.
+
+On the other hand, cross-stack references allow values to be shared between independent CloudFormation stacks. This is done by exporting values in one stack and importing them into another. In practice, you use the `Outputs` section to export a value with a unique name, which is then imported by another stack using the `Fn::ImportValue` function. Cross-stack references are advantageous for decoupling stacks, thereby simplifying the management of dependencies and allowing for flexible architecture. They are particularly suitable for sharing common resources—such as VPCs or security groups—across multiple stacks without duplicating their definitions. 
 
 ## Stacksets
 
-## Deployments
+StackSets in AWS CloudFormation is a powerful feature that allows you to deploy and manage CloudFormation stacks across multiple AWS accounts and regions from a single template. This capability is particularly useful for organizations that need to maintain consistent infrastructure across various environments, such as production and development, or across different branches and geographical locations.
+
+With StackSets, you can define the desired AWS resource configurations in a CloudFormation template and then use that template to create stacks across chosen accounts and regions. A single StackSet can manage multiple stacks that are created, updated, or deleted in one operation, ensuring uniformity and consistency of the deployed resources.
+
+StackSets provide a centralized management approach, simplifying operations like rolling out updates and applying compliance and security policies consistently. When you update a StackSet, it automatically propagates the changes to all associated stacks, making it easier to perform large-scale updates without manual intervention in each region or account.
+
+Additionally, StackSets support two types of deployments: self-managed, where you manually specify the target accounts and regions, and service-managed, which utilizes AWS Organizations to automate the process of managing accounts and permissions. The service-managed option greatly simplifies deployments in multi-account environments by granting AWS CloudFormation the necessary permissions using AWS Organizations service control policies.
+
+Overall, StackSets streamline the management of cross-account and cross-region deployments, ensuring that infrastructure is consistently configured and maintained, thereby reducing the complexity and overhead involved in operating multi-account AWS environments.
+
+You can check the following examples [aws config](https://github.com/glauberss2007/devops-cloud-formation/blob/main/9-drift-sg.yaml),[stack set admin role](https://github.com/glauberss2007/devops-cloud-formation/blob/main/9-drift-sg.yaml) and [stack set exec role](https://github.com/glauberss2007/devops-cloud-formation/blob/main/9-drift-sg.yaml). 
+
+## Deployments option
+
+Change Sets make it possible to before making updates to a stack, you can create a change set to preview how proposed changes might impact existing resources. This preview includes information about the operations that will or might result, such as additions, deletions, or modifications of resources in the stack.
+
+The Stack Policies are JSON documents that define the specific update actions allowed on resources within a stack, providing a level of governance and control. They can prevent certain resources from being unintentionally updated, thus adding an extra layer of protection.
+
+You can check the following examples [deployments example](https://github.com/glauberss2007/devops-cloud-formation/tree/main/12-deployment-options)
 
 ## CI/CD
 
